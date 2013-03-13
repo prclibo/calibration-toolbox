@@ -16,15 +16,14 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
         photosInfo; 
     end
     
-    methods (Abstract)
-        initializeCalibration(obj)
+    methods 
+        function obj = initializeCalibration(obj)
+        end
     end
     
     methods
         % 
-        function obj = CameraCalibrationBase(width, height, pattern)
-            addpath('utils');
-            
+        function obj = CameraCalibrationBase(width, height, pattern)            
             obj.pattern = pattern; 
             obj.photosInfo = []; 
             obj.camera = []; 
@@ -144,7 +143,7 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
             
             obj.initializeCalibration(); 
             obj.optimizeCalibration(); 
-            obj.showPoints(); 
+%             obj.showPoints(); 
 
             
         end

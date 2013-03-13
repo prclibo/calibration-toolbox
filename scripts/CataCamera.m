@@ -251,7 +251,8 @@ classdef CataCamera < handle
             end
         end
         function outputIntrinsics(obj)
-            display(['....Focal length: [', num2str(obj.gamma1), ', ', num2str(obj.gamma2), ']']); 
+            display(['....xi: [', num2str(obj.xi), ']']); 
+            display(['....Focal length: [', num2str(obj.gamma1), ', ', num2str(obj.gamma2), ']'])
             display(['....Aspect ratio: ', num2str(obj.s)]); 
             display(['....Principle Point: [', num2str(obj.u0), ', ', num2str(obj.v0), ']']); 
             display(['....Distortion Coeff: [', num2str(obj.k1), ', ', num2str(obj.k2), ', ', num2str(obj.p1), ', ', num2str(obj.p2), ']']);                         

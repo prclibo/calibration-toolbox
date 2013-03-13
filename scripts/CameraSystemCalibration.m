@@ -16,30 +16,36 @@ classdef CameraSystemCalibration < handle
     end
     methods
         %
-        function obj = CameraSystemCalibration(type, nCameras, width, height, pattern)
+        function obj = CameraSystemCalibration(nCameras, pattern)
             obj.nCameras = nCameras; 
             obj.pattern = pattern; 
             obj.isCameraCalibrated = false(nCameras, 1); 
             obj.fixIntrinsics = true; 
             
-            if strcmpi(type, 'CataCamera')
-                obj.cameraCalibrations = CataCameraCalibration.empty(nCameras, 0); 
-                for ci = 1:nCameras
-                    obj.cameraCalibrations(ci) = CataCameraCalibration(width, height, pattern); 
-                end
-            elseif strcmpi(type, 'PinholeCamera')
-                obj.cameraCalibrations = PinholeCameraCalibration.empty(nCameras, 0); 
-                for ci = 1:nCameras
-                    obj.cameraCalibrations(ci) = PinholeCameraCalibration(width, height, pattern); 
-                end
-            else 
-                error('Unknown camera type! '); 
+            obj.cameraCalibrations = CameraCalibrationBase.empty(nCameras, 0); 
+            for ci = 1:nCameras
+                obj.cameraCalibrations = CameraCalibrationBase([], [], []); 
             end
+            
             obj.vertexList = repmat(struct('pose', [], 'key', '\0'), nCameras, 1); 
             obj.edgeList = repmat(struct('cameraVertex', 0, 'photoVertex', 0, 'photoIndex', 0, 'transform', []), 0, 1); 
             
         end
         
+        %
+        function obj = setCameraType(obj, cameraIndices, type, width, height)
+            if strcmpi(type, 'CataCamera')
+                for ci = cameraIndices(:)'
+                    obj.cameraCalibrations(ci) = CataCameraCalibration(width, height, obj.pattern);
+                end
+            elseif strcmpi(type, 'PinholeCamera')
+                for ci = cameraIndices(:)'
+                    obj.cameraCalibrations(ci) = PinholeCameraCalibration(width, height, obj.pattern);
+                end
+            else
+                error(['Unknown camera type "', type, '"!']);
+            end
+        end
         % 
         function obj = save(obj, name)
             for ci = 1:obj.nCameras
@@ -102,7 +108,7 @@ classdef CameraSystemCalibration < handle
 %             obj.outputExtrinsics();
 
             if obj.fixIntrinsics
-            obj.optimizeExtrinsics(); 
+                obj.optimizeExtrinsics();
             else
                 obj.optimizeFully(); 
             end
@@ -230,9 +236,11 @@ classdef CameraSystemCalibration < handle
 
             error, 
             
+            offset = 0; 
             for ci = 1:obj.nCameras
                 nParams = obj.cameraCalibrations(ci).camera.nParams; 
-                obj.cameraCalibrations(ci).camera.fromParamVector(p((ci - 1) * nParams + (1:nParams))); 
+                obj.cameraCalibrations(ci).camera.fromParamVector(p(offset + (1:nParams))); 
+                offset = offset + nParams; 
             end
             
             
