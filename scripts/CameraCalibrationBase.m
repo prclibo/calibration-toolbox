@@ -75,7 +75,7 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
             obj.pattern = s.pattern;
             obj.photosInfo = s.photosInfo;
             obj.patternFeatures = s.patternPoints; 
-            obj.patternPoints = s.patternPointds; 
+            obj.patternPoints = s.patternPoints; 
         end
         
         % 
