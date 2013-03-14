@@ -1,14 +1,8 @@
-clear all
-videoPathList{1} = 'GOPR0056.avi'; 
-videoPathList{2} = 'GOPR0083.avi'; 
-for i = 1:numel(videoPathList)
-    videoObj{i} = vision.VideoFileReader(videoPathList{i}, 'AudioOutputPort', true);
-%     audioObj{i} = dsp.AudioFileReader(videoPathList{i}); 
-    audio{i} = []; 
-    while ~videoObj{i}.isDone()
-        [~, A] = videoObj{i}.step(); 
-        A = max(A); 
-        audio{i} = [audio{i}; A]; 
-    end
-    audio{i} = mean(audio{i}, 2); 
+path = '../image/temp/cam3/'; 
+fileList = dir([path, '*.bmp']); 
+
+for i = 1:numel(fileList)
+    display(fileList(i).name); 
+    index = sscanf(fileList(i).name, '%dimg%d.bmp'); 
+    system(['mv ', path, fileList(i).name, ' ', path, num2str(index(1)), 'img', num2str(index(2) + 75), '.bmp']); 
 end

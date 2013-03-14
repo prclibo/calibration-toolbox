@@ -6,7 +6,7 @@ count = 0;
 
 m = 10; 
 randseed(3); 
-while m < M / 4
+while m < M
     n = round(N / M * m); 
     
     rnd = rand(n, m); 

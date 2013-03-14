@@ -149,3 +149,4 @@ csc.addPhoto(2, r29, '29');
 csc.save('cscs'); 
 % csc.load('cscs'); 
 csc.calibrate(); 
+csc.cameraCalibrations(1).plotPatternBound(1); 

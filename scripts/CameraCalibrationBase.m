@@ -13,6 +13,8 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
         
         % Data
         pattern; 
+        patternPoints; 
+        patternFeatures; 
         photosInfo; 
     end
     
@@ -33,7 +35,15 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
             obj.maxFinalReprojectError = 1.5; 
             obj.maxFundaMatError = 1; 
             obj.maxHomographyError = 80 / 1000 * width; 
-            
+
+            if ~isempty(pattern)
+                patternKeyPoints = detectSURFFeatures(obj.pattern, 'NumOctaves', 3, 'NumScaleLevels', 3); 
+                [obj.patternFeatures, obj.patternPoints] = extractFeatures(obj.pattern, patternKeyPoints); 
+            else 
+                obj.patternFeatures = []; 
+                obj.patternPoints = []; 
+            end
+
         end
         
         %
@@ -43,12 +53,17 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
             camera = obj.camera;
             pattern = obj.pattern;
             photosInfo = obj.photosInfo;
+            patternFeatures = obj.patternFeatures; 
+            patternPoints = obj.patternPoints; 
+            
             save(name, ...
                  'minMatchedPoints', ...
                  'maxInitReprojectError', ...
                  'camera', ...
                  'pattern', ...
-                 'photosInfo'); 
+                 'photosInfo', ...
+                 'patternFeatures', ...
+                 'patternPoints'); 
         end
         
         %
@@ -59,6 +74,8 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
             obj.camera = s.camera;
             obj.pattern = s.pattern;
             obj.photosInfo = s.photosInfo;
+            obj.patternFeatures = s.patternPoints; 
+            obj.patternPoints = s.patternPointds; 
         end
         
         % 
@@ -67,22 +84,34 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
                 photo = rgb2gray(photo); 
             end
             
-            photo = histeq(photo); 
+            photo1 = photo; 
+            photo2 = histeq(photo);
           
             obj.photosInfo(end + 1).photo = photo; 
             photoIndex = numel(obj.photosInfo); 
                         
-            patternKeyPoints = detectSURFFeatures(obj.pattern, 'NumOctaves', 16); 
-            photoKeyPoints = detectSURFFeatures(photo, 'NumOctaves', 8); 
+            photoKeyPoints1 = detectSURFFeatures(photo1, 'NumOctaves', 8, 'MetricThreshold', 200); 
+            photoKeyPoints2 = detectSURFFeatures(photo2, 'NumOctaves', 8, 'MetricThreshold', 200); 
 
-            [patternFeatures, patternPoints] = extractFeatures(obj.pattern, patternKeyPoints);
-            [photoFeatures, photoPoints] = extractFeatures(photo, photoKeyPoints);
+                        
+            patternFeatures = obj.patternFeatures; 
+            patternPoints = obj.patternPoints; 
+            [photoFeatures1, photoPoints1] = extractFeatures(photo1, photoKeyPoints1); 
+            [photoFeatures2, photoPoints2] = extractFeatures(photo2, photoKeyPoints2); 
             
+            if numel(photoPoints1) > numel(photoPoints2)
+                photoPoints = photoPoints1; 
+                photoFeatures = photoFeatures1; 
+            else
+                photoPoints = photoPoints2; 
+                photoFeatures = photoFeatures2; 
+            end
 
             % Descriptor matching
-            indexPairs = matchFeatures(patternFeatures, photoFeatures, 'Method', 'NearestNeighborRatio');
+            indexPairs = matchFeatures(patternFeatures, photoFeatures, 'Method', 'NearestNeighborRatio'); 
+            display(['....Matches: ', num2str(size(indexPairs, 1))]); 
             
-            if (size(indexPairs, 1) < obj.minMatchedPoints)
+            if (size(indexPairs, 1) < max(obj.minMatchedPoints, 8))
                 obj.photosInfo(end).valid = false; 
                 valid = false; 
                 display('....Invalid photo due to too few matches with pattern. '); 
@@ -94,15 +123,16 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
             
             patternPoints = patternPoints(:).Location;
             photoPoints = photoPoints(:).Location;
-            
+
             % Fundamental matrix check
             [~, inliersMask] = estimateFundamentalMatrix(patternPoints, photoPoints, 'Method', 'RANSAC', ...
                                                 'DistanceThreshold', obj.maxFundaMatError);
             
-            if (sum(inliersMask) < obj.minMatchedPoints)
+            display(['....Matches after Fundam Check: ', num2str(sum(inliersMask))]);
+            if (sum(inliersMask) < max(obj.minMatchedPoints, 4))
                 obj.photosInfo(end).valid = false; 
                 valid = false; 
-                display('....Invalid photo due to too few inliers by Fundamental Matrix check. '); 
+                display(['....Invalid photo due to too few inliers by Fundamental Matrix check: ', num2str(sum(inliersMask))]); 
                 return; 
             end
             
@@ -115,6 +145,7 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
             estimator.AlgebraicDistanceThreshold = obj.maxHomographyError;
             [~, inliersMask] = estimator.step(patternPoints, photoPoints); 
             
+            display(['....Matches after Homography Check: ', num2str(sum(inliersMask))]);
             if (sum(inliersMask) < obj.minMatchedPoints)
                 obj.photosInfo(end).valid = false; 
                 valid = false; 
@@ -133,6 +164,7 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
             
             valid = true; 
             
+            display(['....', num2str(size(patternPoints, 1)), ' features kept']); 
 %             figure, showMatchedFeatures(obj.pattern, photo, patternPoints, photoPoints, 'montage');             
             
             
@@ -343,6 +375,30 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
             hold on
             plot(projectedPoints(:, 1), projectedPoints(:, 2), '.g'); 
             
+        end
+        
+        function plotPatternBound(obj, photoIndex)
+            width = size(obj.pattern, 2); 
+            height = size(obj.pattern, 1); 
+            
+            top(1, :) = 1:width; 
+            top(2, :) = 1; 
+            right(2, :) = 1:height; 
+            right(1, :) = width; 
+            bottom(1, :) = width:-1:1; 
+            bottom(2, :) = height; 
+            left(2, :) = height:-1:1;
+            left(1, :) = 1; 
+            
+            points = [top, right, bottom, left]; 
+            points(3, :) = 1; 
+            
+            photo = obj.photosInfo(photoIndex).photo; 
+            rvec = obj.photosInfo(photoIndex).rvec; 
+            tvec = obj.photosInfo(photoIndex).tvec; 
+            project = obj.camera.projectPoints(points, rvec, tvec); 
+            figure, imshow(photo), hold on
+            plot(project(1, :), project(2, :), 'linewidth', 2); 
         end
 
     end

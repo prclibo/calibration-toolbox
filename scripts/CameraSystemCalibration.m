@@ -82,8 +82,8 @@ classdef CameraSystemCalibration < handle
         
         % 
         function obj = addPhoto(obj, cameraIndex, photo, key)
-            photoIndex = obj.cameraCalibrations(cameraIndex).addPhoto(photo);             
             display(['Camera #', num2str(cameraIndex), ': Adding photo #', key, '...']); 
+            photoIndex = obj.cameraCalibrations(cameraIndex).addPhoto(photo);             
 
             photoVertex = []; 
             for i = 1:numel(obj.vertexList)
