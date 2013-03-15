@@ -1,14 +1,20 @@
 display('----------------------------------------------------------------------'); 
 display('Multiple-Camera Calibration Toolbox'); 
+clear all
+addpath('utils/'); 
+
 
 display('----------------------------------------------------------------------'); 
 display('### Load Pattern')
-path = input('Input the path of the pattern ([] = open file selection dialog):', 's'); 
-if isempty(path)
-    [file, path] = uigetfile('*.jpg;*.tif;*.png;*.gif;*.bmp'); 
-    path = [path, file]; 
-end
+display('Input the path of the pattern'); 
+[file, path] = uigetfile('*.jpg;*.tif;*.png;*.gif;*.bmp');
+path = [path, file];
+
 pattern = imread(path); 
+if (size(pattern, 3) > 1)
+    pattern = rgb2gray(pattern); 
+end
+
 display([path, ' successfully loaded']); 
 
 display('### Resize Pattern')
@@ -36,31 +42,31 @@ opt = [];
 while isempty(opt) || (opt ~= 1 && opt ~= 2)
     opt = input('Use pinhole (1) or catadioptric (2) model for all cameras (1/2)? '); 
 end
+if ###
 
 
 display('----------------------------------------------------------------------'); 
 display('### Load Images'); 
-display('How do you like to load the images?'); 
-display('1-Select images all together (Images must be name in form of "camerIndex-timeStamp")'); 
-display('2-Select images for each pair of cameras'); 
-opt = []; 
-while isempty(opt) || (opt ~= 1 && opt ~= 2)
-    opt = input('Input the number: '); 
-end
+photos = repmat(struct('image', [], 'camera', [], 'timeStamp', []), 0, 1);
 
-photos = struct('image', [], 'camera', [], 'timeStamp', []); 
-if opt == 1
-    display('### Select images all together'); 
-    [files, path] = uigetfile('*.jpg;*.tif;*.png;*.gif;*.bmp', 'MultiSelect', 'On'); 
-    for i = 1:numel(files)
-        im = imread([path, files(i)]); 
-        index = sscanf(fileList(i).name, '%d-%d'); 
-
-        photos(end + 1).image = im; 
-        photos(end).camera = index(1); 
-        photos(end).timeStamp = index(2); 
-    end
-else
+display('### Select images all together (should be named in form "cameraIndex-timeStamp")');
+[files, path] = uigetfile('*.jpg;*.tif;*.png;*.gif;*.bmp', 'MultiSelect', 'On');
+for i = 1:numel(files)
+    im = imread([path, files{i}]);
+    index = sscanf(files{i}, '%d-%d');
     
+    photos(end + 1).image = im;
+    photos(end).camera = index(1);
+    photos(end).timeStamp = index(2);
 end
-display('')
+display([num2str(numel(photos)), 'images loaded']); 
+
+display('----------------------------------------------------------------------'); 
+display('### Process Images'); 
+for i = 1:numel(photos)
+    obj.addPhoto(photos(i).camera, photos(i).image, num2str(photos(i).timeStamp)); 
+end
+
+display('----------------------------------------------------------------------'); 
+display('### Process Calibration'); 
+obj.calibrate(); 

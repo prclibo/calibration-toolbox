@@ -4,7 +4,7 @@ classdef PinholeCameraCalibration < CameraCalibrationBase
         function obj = PinholeCameraCalibration(width, height, pattern) 
             obj = obj@CameraCalibrationBase(width, height, pattern); 
             obj.camera = PinholeCamera(width, height); 
-            obj.maxHomographyError = 10 / 1000 * width; 
+            obj.maxSmoothError = 10 / 1000 * width; 
         end
                         
         % 

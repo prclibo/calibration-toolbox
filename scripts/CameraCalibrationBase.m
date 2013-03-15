@@ -4,8 +4,8 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
         % Settings
         minMatchedPoints; 
         maxInitReprojectError; 
-        maxFundaMatError
-        maxHomographyError; 
+        maxInlierError
+        maxSmoothError; 
         maxFinalReprojectError; 
         
         % Parameters
@@ -33,8 +33,8 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
             obj.minMatchedPoints = 15 / 1000 * width; 
             obj.maxInitReprojectError = 20 / 1200 * width; 
             obj.maxFinalReprojectError = 1.5; 
-            obj.maxFundaMatError = 1; 
-            obj.maxHomographyError = 80 / 1000 * width; 
+            obj.maxInlierError = 1; 
+            obj.maxSmoothError = 80 / 1000 * width; 
 
             if ~isempty(pattern)
                 patternKeyPoints = detectSURFFeatures(obj.pattern, 'NumOctaves', 3, 'NumScaleLevels', 3); 
@@ -125,27 +125,39 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
             photoPoints = photoPoints(:).Location;
 
             % Fundamental matrix check
-            [~, inliersMask] = estimateFundamentalMatrix(patternPoints, photoPoints, 'Method', 'RANSAC', ...
-                                                'DistanceThreshold', obj.maxFundaMatError);
+            [~, inliersMaskF] = estimateFundamentalMatrix(patternPoints, photoPoints, 'Method', 'RANSAC', ...
+                                                'DistanceThreshold', obj.maxInlierError);
             
-            display(['....Matches after Fundam Check: ', num2str(sum(inliersMask))]);
-            if (sum(inliersMask) < max(obj.minMatchedPoints, 4))
+            estimator = vision.GeometricTransformEstimator;
+            estimator.Transform = 'projective';
+            estimator.AlgebraicDistanceThreshold = obj.maxInlierError;
+            [~, inliersMaskH] = estimator.step(patternPoints, photoPoints);  
+            
+            if (sum(inliersMaskH) > sum(inliersMaskF) * 0.8)
+                patternPoints = patternPoints(inliersMaskH, :);
+                photoPoints = photoPoints(inliersMaskH, :);
+                display(['....Matches after Homog. Check: ', num2str(sum(inliersMaskF))]);
+            else
+                patternPoints = patternPoints(inliersMaskF, :);
+                photoPoints = photoPoints(inliersMaskF, :);
+                display(['....Matches after Fundam. Check: ', num2str(sum(inliersMaskF))]);
+            end
+                        
+            if (size(patternPoints, 1) < max(obj.minMatchedPoints, 4))
                 obj.photosInfo(end).valid = false; 
                 valid = false; 
-                display(['....Invalid photo due to too few inliers by Fundamental Matrix check: ', num2str(sum(inliersMask))]); 
+                display(['....Invalid photo due to too few inliers by Fundam./Homog. Matrix check: ', num2str(size(patternPoints, 1))]); 
                 return; 
             end
             
-            patternPoints = patternPoints(inliersMask, :);
-            photoPoints = photoPoints(inliersMask, :);
             
             % Further homography check
             estimator = vision.GeometricTransformEstimator;
             estimator.Transform = 'projective';
-            estimator.AlgebraicDistanceThreshold = obj.maxHomographyError;
+            estimator.AlgebraicDistanceThreshold = obj.maxSmoothError;
             [~, inliersMask] = estimator.step(patternPoints, photoPoints); 
             
-            display(['....Matches after Homography Check: ', num2str(sum(inliersMask))]);
+            display(['....Matches after smoothness Check: ', num2str(sum(inliersMask))]);
             if (sum(inliersMask) < obj.minMatchedPoints)
                 obj.photosInfo(end).valid = false; 
                 valid = false; 
