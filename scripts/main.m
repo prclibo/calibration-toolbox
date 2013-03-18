@@ -55,9 +55,13 @@ if (nCameras > 1)
         for i = 2:nCameras
             opt = [];
             while isempty(opt) || (opt ~= 1 && opt ~= 2)
-                opt = input(['Use pinhole (1) or catadioptric (2) model for Camera #', num2str(i), ' (1/2)? ', 's');                 
+                opt = input(['Use pinhole (1) or catadioptric (2) model for Camera #', num2str(i), ' (1/2)? ']);  
             end
             cameraType{i} = CAMERA_TYPE{opt}; 
+        end
+    else
+        for i = 2:nCameras
+            cameraType{i} = cameraType{1};
         end
     end
 end
@@ -99,7 +103,24 @@ end
 for i = 1:numel(photos)
     obj.addPhoto(photos(i).camera, photos(i).image, num2str(photos(i).timeStamp)); 
 end
+clear photos; 
 
 display('----------------------------------------------------------------------'); 
 display('### Process Calibration'); 
 obj.calibrate(); 
+display('### Calibration finished'); 
+
+
+display('----------------------------------------------------------------------'); 
+display('### Intrinsics: '); 
+obj.outputIntrinsics(); 
+display('### Extrinsics: '); 
+obj.outputExtrinsics(); 
+
+input('Press enter to visualize camera poses plot and pose graph'); 
+obj.visualizeObjects(); 
+obj.visualizeGraph(); 
+
+
+
+
