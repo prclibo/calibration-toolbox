@@ -38,16 +38,36 @@ end
 obj = CameraSystemCalibration(nCameras, pattern); 
 
 display('### Camera Type'); 
+CAMERA_TYPE={'PinholeCamera', 'CataCamera'}; 
+cameraType = cell(nCameras, 1); 
+
 opt = [];
 while isempty(opt) || (opt ~= 1 && opt ~= 2)
-    opt = input('Use pinhole (1) or catadioptric (2) model for all cameras (1/2)? '); 
+    opt = input('Use pinhole (1) or catadioptric (2) model for Camera #1 (1/2)? '); 
 end
-if ###
+cameraType{1} = CAMERA_TYPE{opt}; 
+
+if (nCameras > 1)
+    while ~strcmpi(opt, 'Y') && ~strcmpi(opt, 'N') && ~isempty(opt)
+        opt = input('Use the same model for the rest of the cameras (Y/N, []=Y)? ', 's'); 
+    end
+    if strcmpi(opt, 'N')
+        for i = 2:nCameras
+            opt = [];
+            while isempty(opt) || (opt ~= 1 && opt ~= 2)
+                opt = input(['Use pinhole (1) or catadioptric (2) model for Camera #', num2str(i), ' (1/2)? ', 's');                 
+            end
+            cameraType{i} = CAMERA_TYPE{opt}; 
+        end
+    end
+end
 
 
 display('----------------------------------------------------------------------'); 
 display('### Load Images'); 
 photos = repmat(struct('image', [], 'camera', [], 'timeStamp', []), 0, 1);
+width = zeros(nCameras, 1); 
+height = zeros(nCameras, 1); 
 
 display('### Select images all together (should be named in form "cameraIndex-timeStamp")');
 [files, path] = uigetfile('*.jpg;*.tif;*.png;*.gif;*.bmp', 'MultiSelect', 'On');
@@ -57,12 +77,25 @@ for i = 1:numel(files)
     
     photos(end + 1).image = im;
     photos(end).camera = index(1);
-    photos(end).timeStamp = index(2);
+    photos(end).timeStamp = num2str(index(2));
+    
+    width(index(1)) = size(photos(end).image, 2); 
+    height(index(1)) = size(photos(end).image, 1); 
 end
 display([num2str(numel(photos)), 'images loaded']); 
 
+izeros = find(width == 0); 
+if ~isempty(izeros)
+    error(['No image loaded for Camera #', num2str(izeros(1)), '! ']); 
+end
+
 display('----------------------------------------------------------------------'); 
 display('### Process Images'); 
+% Initialize mono camera calibration models first
+for i = 1:nCameras
+    obj.setCameraType(i, cameraType{i}, width(i), height(i)); 
+end
+
 for i = 1:numel(photos)
     obj.addPhoto(photos(i).camera, photos(i).image, num2str(photos(i).timeStamp)); 
 end
