@@ -30,7 +30,7 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
             obj.photosInfo = []; 
             obj.camera = []; 
             
-            obj.minMatchedPoints = 15 / 1000 * width; 
+            obj.minMatchedPoints = max(15, 20 / 1000 * width); 
             obj.maxInitReprojectError = 20 / 1200 * width; 
             obj.maxFinalReprojectError = 1.5; 
             obj.maxInlierError = 1; 

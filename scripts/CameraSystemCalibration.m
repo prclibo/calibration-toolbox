@@ -112,10 +112,6 @@ classdef CameraSystemCalibration < handle
             else
                 obj.optimizeFully(); 
             end
-            obj.visualizeGraph();            
-            obj.visualizeObjects(); 
-            obj.outputIntrinsics(); 
-            obj.outputExtrinsics(); 
         end
         
         %
