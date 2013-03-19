@@ -54,7 +54,7 @@ Run the `main` script to launch a simple command-line interface for the calibrat
 
 ### An example
 
-This is an example of calibrating a 5-camera rig. [Download the images here]{} and follow the following steps: 
+This is an example of calibrating a 5-camera rig. [Download the images here]() and follow the following steps: 
 
 Run the calibration interface by calling `main` in Matlab. You will see: 
 
@@ -96,6 +96,7 @@ Press `ENTER` to use the same model for the rest 4 cameras.
     ### Load Images
     ### Select images all together (should be named in form "cameraIndex-timeStamp")
 
+Multi-select all images in the file dialog. Then images will be automatically loaded. 
 
 
 
