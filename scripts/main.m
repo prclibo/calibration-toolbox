@@ -24,7 +24,7 @@ display('suitable shrinking can help speed up and enhance the feature detection.
 scale = input('Input the scale ([] = no resize): '); 
 if ~isempty(scale)
     pattern = imresize(pattern, scale); 
-    display('Resized'); 
+    display(['Resized to ', num2str(scale * 100), '%']); 
 else
     display('Not resized'); 
 end

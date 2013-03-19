@@ -1,6 +1,6 @@
 # Multiple-camera System Calibration Toolbox for Matlab
 
-This is a toolbox for calibrating multiple-camera systems. The requirement of this toolbox is that two neighbor cameras in your system should be able to see some part of a calibration board at the same time. In general if the angle between the orientations of two neighbor cameras is no more than 90 deg, this toolbox can work well for your system. 
+This is a toolbox for calibrating multiple-camera systems. The requirement of this toolbox is that two neighbor cameras in your system should be able to see some part of a calibration board at the same time. In general if the angle between the orientations of two neighbor cameras is no more than 90&deg;, this toolbox can work well for your system. 
 
 The toolbox is related to the paper: 
 
@@ -42,7 +42,7 @@ Run the `main` script to launch a simple command-line interface for the calibrat
 
 1. Select the pattern image file you are using. 
 
-2. Resize the pattern if needed. If you use a large calibration pattern with very high resolution but the camera resolution is much lower, it is better to input a resized smaller pattern into the interface image. This can enhance the feature detection and matching performance. 
+2. Resize the pattern if needed. If you use a large calibration pattern with very high resolution but the camera resolution is much lower, it is better to input a resized smaller pattern into the interface image. This can enhance the feature detection and matching performance. The input scale should be less or equal to 1. 
 
 3. Input number of the cameras. 
 
@@ -51,6 +51,56 @@ Run the `main` script to launch a simple command-line interface for the calibrat
 5. Load images. Images should be named in the form of `camera_index-time_stamp.extension`. You can use `Shift` or `Ctrl` keys for multiple selection in the file selection dialog. 
 
 6. Calibration will then automatically launch. 
+
+### An example
+
+This is an example of calibrating a 5-camera rig. [Download the images here]{} and follow the following steps: 
+
+Run the calibration interface by calling `main` in Matlab. You will see: 
+
+>     >> main
+    ----------------------------------------------------------------------
+    Multiple-Camera Calibration Toolbox
+    ----------------------------------------------------------------------
+    ### Load Pattern
+    Input the path of the pattern
+
+Select the pattern image `pattern.png` in the file selection dialog. You will see somthing like this: 
+
+>     /home/li/Workspace/calibration-toolbox/image/pattern.png successfully loaded
+    ### Resize Pattern
+    Do you need to resize the pattern?
+    If the pattern resolution is very high, 
+    suitable shrinking can help speed up and enhance the feature detection. 
+    Input the scale ([] = no resize): 
+
+Since `pattern.png` has very high resolution, input `0.5` to resize it. Next you will see:
+
+>     Resized to 50%
+    ----------------------------------------------------------------------
+    ### Camera Numbers
+    Input the number of cameras in the system: 
+
+Input `5` since we have 5 cameras in the system. 
+
+>     ### Camera Type
+    Use pinhole (1) or catadioptric (2) model for Camera #1 (1/2)? 
+
+Select `2` since this data is from wide angle cameras. 
+
+>     Use the same model for the rest of the cameras (Y/N, []=Y)? 
+
+Press `ENTER` to use the same model for the rest 4 cameras. 
+
+>     ----------------------------------------------------------------------
+    ### Load Images
+    ### Select images all together (should be named in form "cameraIndex-timeStamp")
+
+
+
+
+
+
 
 ---
 ## APIs descriptions
