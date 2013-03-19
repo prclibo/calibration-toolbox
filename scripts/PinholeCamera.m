@@ -226,20 +226,6 @@ classdef PinholeCamera < handle
             
         end
         
-        function undist = undistort(obj, raw, focal, width, height)
-
-            tform = maketform('custom', 2, 2, [], @remap, []); 
-            undist = imtransform(raw, tform, 'xdata', [1, width], 'ydata', [1, height]); 
-            
-            function out = remap(in, tdata)
-                in(:, 1) = in(:, 1) - width / 2; 
-                in(:, 2) = in(:, 2) - height / 2; 
-                in(:, 3) = focal; 
-                in = in'; 
-                out = obj.projectPoints(in, [0; 0; 0], [0; 0; 0]); 
-                out = out'; 
-            end
-        end
         
         function outputIntrinsics(obj)
             display(['....Focal length: [', num2str(obj.gamma1), ', ', num2str(obj.gamma2), ']']); 

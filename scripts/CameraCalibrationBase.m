@@ -413,6 +413,23 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
             plot(project(1, :), project(2, :), 'linewidth', 2); 
         end
 
+        function render = reprojectPattern(obj, photoIndex)
+            raw = obj.photosInfo(photoIndex).photo; 
+            width = size(obj.pattern, 2); 
+            height = size(obj.pattern, 1); 
+            rvec = obj.photosInfo(photoIndex).rvec; 
+            tvec = obj.photosInfo(photoIndex).tvec;             
+            
+            tform = maketform('custom', 2, 2, [], @remap, []); 
+            render = imtransform(raw, tform, 'xdata', [1, width], 'ydata', [1, height]); 
+            
+            function out = remap(in, tdata)
+                in(:, 3) = 0; 
+                in = in'; 
+                out = obj.camera.projectPoints(in, rvec, tvec); 
+                out = out'; 
+            end
+        end
     end
 end
 
