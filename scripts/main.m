@@ -86,7 +86,7 @@ for i = 1:numel(files)
     width(index(1)) = size(photos(end).image, 2); 
     height(index(1)) = size(photos(end).image, 1); 
 end
-display([num2str(numel(photos)), 'images loaded']); 
+display([num2str(numel(photos)), ' images loaded']); 
 
 izeros = find(width == 0); 
 if ~isempty(izeros)
