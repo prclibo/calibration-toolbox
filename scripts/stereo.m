@@ -1,4 +1,5 @@
 clear all
+addpath('utils/')
 warning('off','vision:transition:usesOldCoordinates'); 
 warning('off', 'MATLAB:nearlySingularMatrix'); 
 
@@ -149,4 +150,3 @@ csc.setCameraType(2, 'pinholecamera', size(l1, 2), size(l1, 1));
 % csc.save('cscs'); 
 csc.load('cscs'); 
 csc.calibrate(); 
-csc.cameraCalibrations(1).plotPatternBound(1); 

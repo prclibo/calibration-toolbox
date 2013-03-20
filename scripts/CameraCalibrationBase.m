@@ -215,7 +215,7 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
  
             [p_res, ~, error] = lsqnonlin(objective, p, [], [], options); 
             error = mean(sqrt(sum(reshape(error, 2, []).^2))); 
-            obj.camera.fromParamVector(p_res);             
+            obj.camera.fromParamVector(p_res); 
             
             offset = obj.camera.nParams; 
             obj.setPoseVector(p_res(offset + 1:end), []); 
