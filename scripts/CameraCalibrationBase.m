@@ -8,7 +8,7 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
         maxSmoothError; 
         maxFinalReprojectError; 
         
-        knownIntrinsics; 
+        intrinsicsFile; 
         
         % Parameters
         camera; 
@@ -36,7 +36,7 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
             obj.maxInlierError = 1; 
             obj.maxSmoothError = 80 / 1000 * width; 
             
-            obj.knownIntrinsics = false; 
+            obj.intrinsicsFile = []; 
 
             if ~isempty(pattern)
                 patternKeyPoints = detectSURFFeatures(obj.pattern, 'NumOctaves', 3, 'NumScaleLevels', 3); 
@@ -81,9 +81,8 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
         end
         
         %
-        function obj = loadIntrinsics(obj, fileName)
-            obj.camera.loadIntrinsics(fileName); 
-            obj.knownIntrinsics = true; 
+        function obj = setIntrinsics(obj, fileName)
+            obj.intrinsicsFile = fileName; 
         end
         
         % 
@@ -193,7 +192,9 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
         % 
         function obj = calibrate(obj)
             obj.initializeCalibration();
-            obj.optimizeCalibration();
+            if isempty(obj.intrinsicsFile)
+                obj.optimizeCalibration(); 
+            end
         end
         
         % 
@@ -203,7 +204,11 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
             
             [gammaGuess, r1All, r2All, tAll] = initializationHelper(obj); 
 
-            obj.camera.fromParamVector([gammaGuess, gammaGuess, 0, u0, v0, 1, 0, 0, 0, 0]); 
+            if isempty(obj.intrinsicsFile)
+                obj.camera.fromParamVector([gammaGuess, gammaGuess, 0, u0, v0, 1, 0, 0, 0, 0]); 
+            else
+                obj.camera.loadIntrinsics(obj.intrinsicsFile); 
+            end
             
             photosValid = find([obj.photosInfo(:).valid]); 
             for k = 1:numel(photosValid)
