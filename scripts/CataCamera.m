@@ -1,10 +1,5 @@
-classdef CataCamera < handle
+classdef CataCamera < CameraBase
     properties
-        width
-        height
-        
-        nParams = 10; 
-        
         gamma1
         gamma2
         s
@@ -20,24 +15,24 @@ classdef CataCamera < handle
     
     methods
         % 
-        function cataCamera = CataCamera(width, height, gamma1, gamma2, s, u0, v0, xi, k1, k2, p1, p2)
-            cataCamera.width = width; 
-            cataCamera.height = height; 
+        function obj = CataCamera(width, height, gamma1, gamma2, s, u0, v0, xi, k1, k2, p1, p2)
+            obj = obj@CameraBase(width, height); 
+            obj.nParams = 10; 
             
             if (nargin <= 2) 
                 return; 
             end
-            
-            cataCamera.gamma1 = gamma1; 
-            cataCamera.gamma2 = gamma2; 
-            cataCamera.s = s; 
-            cataCamera.u0 = u0; 
-            cataCamera.v0 = v0; 
-            cataCamera.xi = xi; 
-            cataCamera.k1 = k1; 
-            cataCamera.k2 = k2; 
-            cataCamera.p1 = p1; 
-            cataCamera.p2 = p2; 
+
+            obj.gamma1 = gamma1; 
+            obj.gamma2 = gamma2; 
+            obj.s = s; 
+            obj.u0 = u0; 
+            obj.v0 = v0; 
+            obj.xi = xi; 
+            obj.k1 = k1; 
+            obj.k2 = k2; 
+            obj.p1 = p1; 
+            obj.p2 = p2; 
         end
         
         function p = toParamVector(cataCamera)

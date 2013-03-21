@@ -8,6 +8,8 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
         maxSmoothError; 
         maxFinalReprojectError; 
         
+        knownIntrinsics; 
+        
         % Parameters
         camera; 
         
@@ -19,13 +21,11 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
     end
     
     methods 
-        function obj = initializeCalibration(obj)
-        end
     end
     
     methods
         % 
-        function obj = CameraCalibrationBase(width, height, pattern)            
+        function obj = CameraCalibrationBase(width, height, pattern) 
             obj.pattern = pattern; 
             obj.photosInfo = []; 
             obj.camera = []; 
@@ -35,6 +35,8 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
             obj.maxFinalReprojectError = 1.5; 
             obj.maxInlierError = 1; 
             obj.maxSmoothError = 80 / 1000 * width; 
+            
+            obj.knownIntrinsics = false; 
 
             if ~isempty(pattern)
                 patternKeyPoints = detectSURFFeatures(obj.pattern, 'NumOctaves', 3, 'NumScaleLevels', 3); 
@@ -76,6 +78,12 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
             obj.photosInfo = s.photosInfo;
             obj.patternFeatures = s.patternPoints; 
             obj.patternPoints = s.patternPoints; 
+        end
+        
+        %
+        function obj = loadIntrinsics(obj, fileName)
+            obj.camera.loadIntrinsics(fileName); 
+            obj.knownIntrinsics = true; 
         end
         
         % 
@@ -184,15 +192,50 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
         
         % 
         function obj = calibrate(obj)
-            
-            obj.initializeCalibration(); 
-            obj.optimizeCalibration(); 
-%             obj.showPoints(); 
-
-            
+            obj.initializeCalibration();
+            obj.optimizeCalibration();
         end
         
         % 
+        function obj = initializeCalibration(obj)
+            u0 = obj.camera.width / 2;
+            v0 = obj.camera.height / 2; 
+            
+            [gammaGuess, r1All, r2All, tAll] = initializationHelper(obj); 
+
+            obj.camera.fromParamVector([gammaGuess, gammaGuess, 0, u0, v0, 1, 0, 0, 0, 0]); 
+            
+            photosValid = find([obj.photosInfo(:).valid]); 
+            for k = 1:numel(photosValid)
+                i = photosValid(k); 
+
+                r1 = r1All(:, i); 
+                r2 = r2All(:, i); 
+                t = tAll(:, i); 
+                R = [r1, r2, cross(r1, r2)]; 
+                
+                obj.photosInfo(i).rvec = rodrigues(R);
+                obj.photosInfo(i).tvec = t;
+                
+                reprojectError = obj.pnpOptimization(i);
+
+                display(['....Init error for ', num2str(i), ' = ', num2str(reprojectError)]); 
+                
+                if reprojectError > obj.maxInitReprojectError
+                    obj.photosInfo(i).valid = false; 
+                    display('........Remove 1 invalid photo due to too high init reprojection error. '); 
+                    continue;                     
+                end
+
+            end            
+
+        end
+        
+        %
+        function [gammaGuess, r1All, r2All, tAll] = initializationHelper(obj)
+        end
+
+        %
         function obj = optimizeCalibration(obj)
 
             
@@ -389,6 +432,7 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
             
         end
         
+        %
         function plotPatternBound(obj, photoIndex)
             width = size(obj.pattern, 2); 
             height = size(obj.pattern, 1); 
@@ -413,6 +457,7 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
             plot(project(1, :), project(2, :), 'linewidth', 2); 
         end
 
+        %
         function render = reprojectPattern(obj, photoIndex)
             raw = obj.photosInfo(photoIndex).photo; 
             width = size(obj.pattern, 2); 

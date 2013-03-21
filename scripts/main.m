@@ -75,6 +75,9 @@ height = zeros(nCameras, 1);
 
 display('### Select images all together (should be named in form "cameraIndex-timeStamp")');
 [files, path] = uigetfile('*.jpg;*.tif;*.png;*.gif;*.bmp', 'MultiSelect', 'On');
+if ~iscell(files)
+    error('You cannot only select one file! '); 
+end
 for i = 1:numel(files)
     im = imread([path, files{i}]);
     index = sscanf(files{i}, '%d-%d');

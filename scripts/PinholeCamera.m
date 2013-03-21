@@ -1,10 +1,5 @@
-classdef PinholeCamera < handle
-    properties
-        width
-        height
-        
-        nParams = 9; 
-        
+classdef PinholeCamera < CameraBase
+    properties      
         gamma1
         gamma2
         s
@@ -20,12 +15,8 @@ classdef PinholeCamera < handle
     methods
         % 
         function obj = PinholeCamera(width, height, gamma1, gamma2, s, u0, v0, k1, k2, p1, p2)
-            if (nargin == 0)
-                return; 
-            end
-            
-            obj.width = width; 
-            obj.height = height; 
+            obj = obj@CameraBase(width, height); 
+            obj.nParams = 9; 
             
             if (nargin <= 2) 
                 return; 

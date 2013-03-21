@@ -7,7 +7,7 @@ classdef CataCameraCalibration < CameraCalibrationBase
         end
         
         % 
-        function obj = initializeCalibration(obj)
+        function [gammaGuess, r1All, r2All, tAll] = initializationHelper(obj)
 
             u0 = obj.camera.width / 2; 
             v0 = obj.camera.height / 2; 
@@ -116,31 +116,6 @@ classdef CataCameraCalibration < CameraCalibrationBase
             end
 
             gammaGuess = median(gammaAll(gammaAll > 0));
-            
-            obj.camera.fromParamVector([gammaGuess, gammaGuess, 0, u0, v0, 1, 0, 0, 0, 0]); 
-            
-            photosValid = find([obj.photosInfo(:).valid]); 
-            for k = 1:numel(photosValid)
-                i = photosValid(k); 
-
-                r1 = r1All(:, i); 
-                r2 = r2All(:, i); 
-                t = tAll(:, i); 
-                R = [r1, r2, cross(r1, r2)]; 
-                
-                obj.photosInfo(i).rvec = rodrigues(R);
-                obj.photosInfo(i).tvec = t;
-                
-                reprojectError = obj.pnpOptimization(i);
-                display(['....Init error for ', num2str(i), ' = ', num2str(reprojectError)]); 
-                
-                if reprojectError > obj.maxInitReprojectError
-                    obj.photosInfo(i).valid = false; 
-                    display('........Remove 1 invalid photo due to too too high init reprojection error. '); 
-                    continue;                     
-                end
-
-            end
         end
     end
 end
