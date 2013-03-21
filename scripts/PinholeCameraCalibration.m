@@ -6,7 +6,8 @@ classdef PinholeCameraCalibration < CameraCalibrationBase
             obj.camera = PinholeCamera(width, height); 
             obj.maxSmoothError = 10 / 1000 * width; 
         end
-                        
+    end
+    methods(Access = protected)
         % 
         function [gammaGuess, r1All, r2All, tAll] = initializationHelper(obj)
 

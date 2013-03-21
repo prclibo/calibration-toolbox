@@ -20,10 +20,7 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
         photosInfo; 
     end
     
-    methods 
-    end
-    
-    methods
+    methods(Access = public)
         % 
         function obj = CameraCalibrationBase(width, height, pattern) 
             obj.pattern = pattern; 
@@ -196,97 +193,7 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
                 obj.optimizeCalibration(); 
             end
         end
-        
-        % 
-        function obj = initializeCalibration(obj)
-            u0 = obj.camera.width / 2;
-            v0 = obj.camera.height / 2; 
-            
-            [gammaGuess, r1All, r2All, tAll] = initializationHelper(obj); 
 
-            if isempty(obj.intrinsicsFile)
-                obj.camera.fromParamVector([gammaGuess, gammaGuess, 0, u0, v0, 1, 0, 0, 0, 0]); 
-            else
-                obj.camera.loadIntrinsics(obj.intrinsicsFile); 
-            end
-            
-            photosValid = find([obj.photosInfo(:).valid]); 
-            for k = 1:numel(photosValid)
-                i = photosValid(k); 
-
-                r1 = r1All(:, i); 
-                r2 = r2All(:, i); 
-                t = tAll(:, i); 
-                R = [r1, r2, cross(r1, r2)]; 
-                
-                obj.photosInfo(i).rvec = rodrigues(R);
-                obj.photosInfo(i).tvec = t;
-                
-                reprojectError = obj.pnpOptimization(i);
-
-                display(['....Init error for ', num2str(i), ' = ', num2str(reprojectError)]); 
-                
-                if reprojectError > obj.maxInitReprojectError
-                    obj.photosInfo(i).valid = false; 
-                    display('........Remove 1 invalid photo due to too high init reprojection error. '); 
-                    continue;                     
-                end
-
-            end            
-
-        end
-        
-        %
-        function [gammaGuess, r1All, r2All, tAll] = initializationHelper(obj)
-        end
-
-        %
-        function obj = optimizeCalibration(obj)
-
-            
-            photosValid = find([obj.photosInfo(:).valid]); 
-             
-            p = [obj.camera.toParamVector(); 
-                 obj.getPoseVector([])]; 
-            
-            objective = @(x) obj.calibrationObjective(x);             
-            
-            p = double(p); 
-%             options=optimset('Display','iter',...
-%                  'DerivativeCheck','on',...
-%                  'Jacobian','on',...
-%                  'MaxIter',10000, 'MaxFunEvals', 20000, 'TolX', 1e-6, 'TolFun', 1e-6, 'Algorithm', 'trust-region-reflective'); 
-            options=optimset('Display','off',...
-                 'DerivativeCheck','off',...
-                 'Jacobian','on',...
-                 'MaxIter',10000, 'MaxFunEvals', 20000, 'TolX', 1e-6, 'TolFun', 1e-6, 'Algorithm', 'levenberg-marquardt'); 
- 
-            [p_res, ~, error] = lsqnonlin(objective, p, [], [], options); 
-            error = mean(sqrt(sum(reshape(error, 2, []).^2))); 
-            obj.camera.fromParamVector(p_res); 
-            
-            offset = obj.camera.nParams; 
-            obj.setPoseVector(p_res(offset + 1:end), []); 
-            
-            %%%
-            for k = 1:numel(photosValid)
-                i = photosValid(k); 
-                each_error = obj.computeReprojError(i); 
-                each_error = mean(sqrt(sum(reshape(each_error, 2, []).^2))); 
-                display(['....Final error for photo', num2str(i), ' = ', num2str((each_error))]); 
-                if (each_error > obj.maxFinalReprojectError)
-                    obj.photosInfo(i).valid = false;
-                    display('........Removed 1 photo due to too high final reproject error. ');
-                end
-            end
-            %%%
-            
-            display('....Optimization result: '); 
-            display(['........error = ', num2str(error)]); 
-            
-            
-        end
-        
         %
         function obj = setPoseVector(obj, p, photoIndex)
             if isempty(photoIndex)
@@ -322,65 +229,6 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
                 tvec = obj.photosInfo(photoIndex).tvec;
                 p = [rvec(:); tvec(:)]; 
             end
-        end
-        
-        %
-        function [error, jacobCameraPose] = calibrationObjective(obj, p)
-            
-            photosValid = find([obj.photosInfo(:).valid]); 
-                       
-            obj.camera.fromParamVector(p); 
-            offset = obj.camera.nParams; 
-            
-            pp = p(offset + 1:end); 
-            obj.setPoseVector(pp, []); 
-            
-            error = []; 
-            jacobCamera = []; 
-            jacobPose = []; 
-            for k = 1:numel(photosValid)
-                i = photosValid(k); 
-                nPoints = obj.photosInfo(i).nPoints; 
-                
-                [each_error, J_pose, J_camera] = obj.computeReprojError(i); 
-                error = [error; each_error]; 
-                jacobCamera = [jacobCamera; J_camera]; 
-                jacobPose(end + (1:nPoints * 2), end + (1:6)) = J_pose; 
-            end
-            
-            jacobCameraPose = [jacobCamera, jacobPose]; 
-            jacobCameraPose = sparse(jacobCameraPose); 
-            
-        end
-        
-        % 
-        function error = pnpOptimization(obj, photoIndex)
-            p = obj.getPoseVector(photoIndex); 
-            p = double(p); 
-            
-            objective = @(x) obj.pnpObjective(photoIndex, x); 
-%             options=optimset('Display','off',...
-%                  'DerivativeCheck','on',...
-%                  'Jacobian','on',...
-%                  'MaxIter',10000, 'Algorithm', 'trust-region-reflective'); 
-            options=optimset('Display','off',...
-                 'DerivativeCheck','off',...
-                 'Jacobian','on',...
-                 'MaxIter',10000, 'MaxFunEvals', 20000, 'TolX', 1e-6, 'TolFun', 1e-6, 'Algorithm', 'levenberg-marquardt'); 
-
-            bound = [pi; pi; pi; inf; inf; inf]; 
-            [p_res, ~, error] = lsqnonlin(objective, p, [], [], options); 
-            obj.setPoseVector(p_res, photoIndex); 
-            
-            error = mean(sqrt(sum(reshape(error, 2, []).^2))); 
-            
-        end
-        
-        % 
-        function [error, jacobPose] = pnpObjective(obj, photoIndex, p)
-            obj.setPoseVector(p, photoIndex); 
-
-            [error, jacobPose] = obj.computeReprojError(photoIndex); 
         end
         
         % 
@@ -480,6 +328,162 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
                 out = out'; 
             end
         end
+    end
+    
+    methods (Access = protected)
+        
+        %
+        function [gammaGuess, r1All, r2All, tAll] = initializationHelper(obj)
+        end
+                
+        % 
+        function obj = initializeCalibration(obj)
+            u0 = obj.camera.width / 2;
+            v0 = obj.camera.height / 2; 
+            
+            [gammaGuess, r1All, r2All, tAll] = initializationHelper(obj); 
+
+            if isempty(obj.intrinsicsFile)
+                obj.camera.fromParamVector([gammaGuess, gammaGuess, 0, u0, v0, 1, 0, 0, 0, 0]); 
+            else
+                obj.camera.loadIntrinsics(obj.intrinsicsFile); 
+            end
+            
+            photosValid = find([obj.photosInfo(:).valid]); 
+            for k = 1:numel(photosValid)
+                i = photosValid(k); 
+
+                r1 = r1All(:, i); 
+                r2 = r2All(:, i); 
+                t = tAll(:, i); 
+                R = [r1, r2, cross(r1, r2)]; 
+                
+                obj.photosInfo(i).rvec = rodrigues(R);
+                obj.photosInfo(i).tvec = t;
+                
+                reprojectError = obj.pnpOptimization(i);
+
+                display(['....Init error for ', num2str(i), ' = ', num2str(reprojectError)]); 
+                
+                if reprojectError > obj.maxInitReprojectError
+                    obj.photosInfo(i).valid = false; 
+                    display('........Remove 1 invalid photo due to too high init reprojection error. '); 
+                    continue;                     
+                end
+
+            end            
+
+        end
+        
+        %
+        function obj = optimizeCalibration(obj)
+
+            
+            photosValid = find([obj.photosInfo(:).valid]); 
+             
+            p = [obj.camera.toParamVector(); 
+                 obj.getPoseVector([])]; 
+            
+            objective = @(x) obj.calibrationObjective(x);             
+            
+            p = double(p); 
+%             options=optimset('Display','iter',...
+%                  'DerivativeCheck','on',...
+%                  'Jacobian','on',...
+%                  'MaxIter',10000, 'MaxFunEvals', 20000, 'TolX', 1e-6, 'TolFun', 1e-6, 'Algorithm', 'trust-region-reflective'); 
+            options=optimset('Display','off',...
+                 'DerivativeCheck','off',...
+                 'Jacobian','on',...
+                 'MaxIter',10000, 'MaxFunEvals', 20000, 'TolX', 1e-6, 'TolFun', 1e-6, 'Algorithm', 'levenberg-marquardt'); 
+ 
+            [p_res, ~, error] = lsqnonlin(objective, p, [], [], options); 
+            error = mean(sqrt(sum(reshape(error, 2, []).^2))); 
+            obj.camera.fromParamVector(p_res); 
+            
+            offset = obj.camera.nParams; 
+            obj.setPoseVector(p_res(offset + 1:end), []); 
+            
+            %%%
+            for k = 1:numel(photosValid)
+                i = photosValid(k); 
+                each_error = obj.computeReprojError(i); 
+                each_error = mean(sqrt(sum(reshape(each_error, 2, []).^2))); 
+                display(['....Final error for photo', num2str(i), ' = ', num2str((each_error))]); 
+                if (each_error > obj.maxFinalReprojectError)
+                    obj.photosInfo(i).valid = false;
+                    display('........Removed 1 photo due to too high final reproject error. ');
+                end
+            end
+            %%%
+            
+            display('....Optimization result: '); 
+            display(['........error = ', num2str(error)]); 
+            
+            
+        end
+        
+
+        
+        %
+        function [error, jacobCameraPose] = calibrationObjective(obj, p)
+            
+            photosValid = find([obj.photosInfo(:).valid]); 
+                       
+            obj.camera.fromParamVector(p); 
+            offset = obj.camera.nParams; 
+            
+            pp = p(offset + 1:end); 
+            obj.setPoseVector(pp, []); 
+            
+            error = []; 
+            jacobCamera = []; 
+            jacobPose = []; 
+            for k = 1:numel(photosValid)
+                i = photosValid(k); 
+                nPoints = obj.photosInfo(i).nPoints; 
+                
+                [each_error, J_pose, J_camera] = obj.computeReprojError(i); 
+                error = [error; each_error]; 
+                jacobCamera = [jacobCamera; J_camera]; 
+                jacobPose(end + (1:nPoints * 2), end + (1:6)) = J_pose; 
+            end
+            
+            jacobCameraPose = [jacobCamera, jacobPose]; 
+            jacobCameraPose = sparse(jacobCameraPose); 
+            
+        end
+        
+        % 
+        function error = pnpOptimization(obj, photoIndex)
+            p = obj.getPoseVector(photoIndex); 
+            p = double(p); 
+            
+            objective = @(x) obj.pnpObjective(photoIndex, x); 
+%             options=optimset('Display','off',...
+%                  'DerivativeCheck','on',...
+%                  'Jacobian','on',...
+%                  'MaxIter',10000, 'Algorithm', 'trust-region-reflective'); 
+            options=optimset('Display','off',...
+                 'DerivativeCheck','off',...
+                 'Jacobian','on',...
+                 'MaxIter',10000, 'MaxFunEvals', 20000, 'TolX', 1e-6, 'TolFun', 1e-6, 'Algorithm', 'levenberg-marquardt'); 
+
+            bound = [pi; pi; pi; inf; inf; inf]; 
+            [p_res, ~, error] = lsqnonlin(objective, p, [], [], options); 
+            obj.setPoseVector(p_res, photoIndex); 
+            
+            error = mean(sqrt(sum(reshape(error, 2, []).^2))); 
+            
+        end
+        
+        % 
+        function [error, jacobPose] = pnpObjective(obj, photoIndex, p)
+            obj.setPoseVector(p, photoIndex); 
+
+            [error, jacobPose] = obj.computeReprojError(photoIndex); 
+        end
+        
+        
     end
 end
 

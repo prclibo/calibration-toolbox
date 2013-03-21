@@ -5,7 +5,8 @@ classdef CataCameraCalibration < CameraCalibrationBase
             obj = obj@CameraCalibrationBase(width, height, pattern); 
             obj.camera = CataCamera(width, height); 
         end
-        
+    end
+    methods(Access = protected)
         % 
         function [gammaGuess, r1All, r2All, tAll] = initializationHelper(obj)
 
