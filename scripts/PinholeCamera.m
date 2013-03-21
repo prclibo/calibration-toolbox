@@ -20,6 +20,10 @@ classdef PinholeCamera < handle
     methods
         % 
         function obj = PinholeCamera(width, height, gamma1, gamma2, s, u0, v0, k1, k2, p1, p2)
+            if (nargin == 0)
+                return; 
+            end
+            
             obj.width = width; 
             obj.height = height; 
             
@@ -226,13 +230,51 @@ classdef PinholeCamera < handle
             
         end
         
-        
-        function outputIntrinsics(obj)
-            display(['....Focal length: [', num2str(obj.gamma1), ', ', num2str(obj.gamma2), ']']); 
-            display(['....Aspect ratio: ', num2str(obj.s)]); 
-            display(['....Principle Point: [', num2str(obj.u0), ', ', num2str(obj.v0), ']']); 
-            display(['....Distortion Coeff: [', num2str(obj.k1), ', ', num2str(obj.k2), ', ', num2str(obj.p1), ', ', num2str(obj.p2), ']']);                         
+        %
+        function outputIntrinsics(obj, fileName)
+            if nargin < 2
+                display(['....Focal length: [', num2str(obj.gamma1), ', ', num2str(obj.gamma2), ']'])
+                display(['....Aspect ratio: ', num2str(obj.s)]); 
+                display(['....Principle Point: [', num2str(obj.u0), ', ', num2str(obj.v0), ']']); 
+                display(['....Distortion Coeff: [', num2str(obj.k1), ', ', num2str(obj.k2), ', ', num2str(obj.p1), ', ', num2str(obj.p2), ']']);                         
+            else
+                docNode = com.mathworks.xml.XMLUtils.createDocument('camera');
+                camera = docNode.getDocumentElement;
+                camera.setAttribute('type','CataCamera');
+                camera.setAttribute('width',num2str(obj.width));
+                camera.setAttribute('height',num2str(obj.height));
+                camera.setAttribute('gamma1', num2str(obj.gamma1));
+                camera.setAttribute('gamma2', num2str(obj.gamma2));
+                camera.setAttribute('s', num2str(obj.s));
+                camera.setAttribute('u0', num2str(obj.u0));
+                camera.setAttribute('v0', num2str(obj.v0));
+                camera.setAttribute('k1', num2str(obj.k1));
+                camera.setAttribute('k2', num2str(obj.k2));
+                camera.setAttribute('p1', num2str(obj.p1));
+                camera.setAttribute('p2', num2str(obj.p2));
+
+                xmlwrite(fileName, docNode);
+            end
         end
         
+        %
+        function obj = loadIntrinsics(obj, fileName)
+            docNode = xmlread(fileName); 
+            camera = docNode.getDocumentElement; 
+            type = camera.getAttribute('type'); 
+            assert(strcmpi(type, 'PinholeCamera'), 'Wrong camera type'); 
+            
+            obj.width = str2double(camera.getAttribute('width')); 
+            obj.height = str2double(camera.getAttribute('height')); 
+            obj.gamma1 = str2double(camera.getAttribute('gamma1')); 
+            obj.gamma2 = str2double(camera.getAttribute('gamma2')); 
+            obj.s = str2double(camera.getAttribute('s')); 
+            obj.u0 = str2double(camera.getAttribute('u0')); 
+            obj.v0 = str2double(camera.getAttribute('v0')); 
+            obj.k1 = str2double(camera.getAttribute('k1')); 
+            obj.k2 = str2double(camera.getAttribute('k2')); 
+            obj.p1 = str2double(camera.getAttribute('p1')); 
+            obj.p2 = str2double(camera.getAttribute('p2')); 
+        end
     end
 end

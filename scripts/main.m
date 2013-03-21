@@ -117,10 +117,8 @@ obj.outputIntrinsics();
 display('### Extrinsics: '); 
 obj.outputExtrinsics(); 
 
-input('Press enter to visualize camera poses plot and pose graph'); 
+input('Press ENTER to visualize camera poses plot and pose graph'); 
 obj.visualizeObjects(); 
 obj.visualizeGraph(); 
-
-
 
 

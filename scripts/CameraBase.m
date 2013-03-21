@@ -19,6 +19,7 @@ classdef CameraBase < handle & matlab.mixin.Heterogeneous
         fromParamVector(obj); 
         projectPoints(obj); 
         outputIntrinsics(obj); 
+        loadIntrinsics(obj); 
     end
     
     methods
