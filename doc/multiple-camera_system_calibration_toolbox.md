@@ -54,7 +54,7 @@ Run the `main` script to launch a simple command-line interface for the calibrat
 
 ### An example
 
-This is an example of calibrating a 5-camera rig. [Download the images here]() and follow the following steps: 
+This is an example of calibrating a 5-camera rig. [Download the images here](https://docs.google.com/file/d/0BwxCBduyhug1Ry1nZ0R0Nl9OS0E/edit?usp=sharing) and follow the following steps: 
 
 Run the calibration interface by calling `main` in Matlab. You will see: 
 
