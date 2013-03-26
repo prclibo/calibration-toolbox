@@ -1,4 +1,4 @@
-# Multiple-camera System Calibration Toolbox for Matlab
+# Multiple-Camera System Calibration Toolbox for Matlab
 
 This is a toolbox for calibrating multiple-camera systems. The requirement of this toolbox is that two neighbor cameras in your system should be able to see some part of a calibration board at the same time. In general if the angle between the orientations of two neighbor cameras is no more than 90&deg;, this toolbox can work well for your system. 
 
@@ -13,8 +13,8 @@ This toolbox also exploits some util codes from [Bouguet's calibration toolbox](
 
 * System requirements
 * Quick start
-* APIs descriptions
-* FAQs
+* API descriptions
+* Reference
 
 ---
 ## System requirements
@@ -188,6 +188,63 @@ The loading info displays how many valid features are detected from each image. 
 Press `ENTER` key and you will see the 3D plot of camera poses and visualized pose graph. NOTE your result for this demo maybe different from the above result. This is due to the sample images are not well synchronized yet. 
 
 ---
-## APIs descriptions
+## API descriptions
 
-Coming soon. 
+The main part of the toolbox are encapsulated in several Matlab objects. You can easily use the object API to build your own calibration program or camera model in your computer vision applications. 
+
+###`CameraBase < handle & matlab.mixin.Heterogeneous`
+
+Base class for camera model. 
+
+* **`nParams`** Number of intrinsic parameters. 
+* **`obj = CameraBase(width, height)`** Constructor. 
+* **`p = toParamVector(obj)`** Convert intrinsic parameters to a vector. 
+* **`fromParamVector(obj, p)`** Load intrinsic parameters from a vector. 
+* **`[x, jacobPose, jacobCamera] = projectPoints(obj, points, rvec, tvec)`** Project 3D points to image points. `points` should be `3`&times;`N`. `jacobPose` is `2N`&times;`6`. `jacobCamera` is `2N`&times;`nParams`. 
+* **`undist = undistort(obj, raw, focal, width, height)`** Undistort a given raw image. The undistorted image is `height`&times;`width`, with `focal` as the focal length. 
+* **`outputIntrinsics(obj, fileName)`** Output intrinsics parameters to a XML file or to the console if the `fileName` is omitted. 
+* **`loadIntrinsics(obj, fileName)`** Load intrinsics parameters from a XML file. 
+
+###`PinholeCamera < CameraBase`
+
+Camera class for pinhole camera model. 
+
+###`CataCamera < CameraBase`
+
+Camera class for generic camera model, using the catadioptric model. 
+
+###`CameraCalibrationBase < handle & matlab.mixin.Heterogeneous`
+
+Base class for single camera calibration. 
+
+* **`obj = CameraCalibrationBase(width, height, pattern)`** Constructor. `width` and `height` are the camera resolution. `pattern` is the pattern image. 
+* **`[photoIndex, valid] = addPhoto(obj, photo)`** Add a photo of the pattern. return a index and a boolean if the photo is good. 
+* **`p = getPoseVector(obj, photoIndex)`** Put the pattern pose for photo `photoIndex` in a `6`&times;`1` vector. 
+* **`setPoseVector(obj, p, photoIndex)`** Load the pattern pose for photo `photoIndex` from a vector. 
+* **`calibrate(obj)`** Calibrate the camera. 
+* **`[error, jacobPose, jacobCamera] = computeReprojError(obj, photoIndex)`** Compute the reprojection error of one photo. 
+* **`render = reprojectPattern(obj, photoIndex)`** Reproject the pattern from a photo to the pattern plane. 
+* **`showPoints(obj)`** Show all detected features from different photo together. This can be used to check if the features are uniform distributed. 
+
+###`PinholeCameraCalibration < CameraCalibrationBase`
+
+Class implementation for calibrating a pinhole camera. 
+
+###`CataCameraCalibration  < CameraCalibrationBase`
+
+Class implementation for calibrating a generic camera. 
+
+###`CameraSystemCalibration < handle`
+
+Class implementation for calibrating a camera system. 
+
+* **`obj = CameraSystemCalibration(nCameras, pattern)`** Constructor. `pattern` is the pattern image. 
+* **`setCameraType(obj, cameraIndices, type, width, height)`** Set camera type. Camera indices are 1-based index. You can set several cameras as the same type together. 
+* **`addPhoto(obj, cameraIndex, photo, key)`** Add a photo for a camera. `key` is the string timestamp. 
+* **`calibrate(obj)`** Calibrate the system after adding all photos. 
+* **`visualizeObjects(obj)`** Visualize the camera poses and pattern poses. 
+* **`visualizeGraph(obj)`** Visualize the pose graph. 
+
+## Reference
+
+Please see our paper for references: A Multiple-Camera System Calibration Toolbox Using A Feature Descriptor-Based Calibration Pattern, submitted to IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), 2013. 
