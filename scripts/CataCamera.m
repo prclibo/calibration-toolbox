@@ -138,8 +138,8 @@ classdef CataCamera < CameraBase
 
             
             
-            px1_dud = repmat([gamma1; 0], 1, size(points, 2)); 
-            px2_dud = repmat([s; gamma2], 1, size(points, 2)); 
+            px1_dud = repmat([gamma1; s], 1, size(points, 2)); 
+            px2_dud = repmat([0; gamma2], 1, size(points, 2)); 
 
             pud_du1(1, :) = k1.*sqr_rho + 2.*p1.*u(2, :) + 4.*p2.*u(1, :) + 2.*u(1, :).*(p2 + u(1, :).*(temp1)) + k2.*qua_rho + 1; 
             pud_du1(2, :) = 2.*p2.*u(2, :) + 2.*u(1, :).*(p1 + u(2, :).*(temp1)); 
