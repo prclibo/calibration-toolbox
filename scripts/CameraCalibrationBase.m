@@ -148,10 +148,15 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
             [~, inliersMaskF] = estimateFundamentalMatrix(patternPoints, photoPoints, 'Method', 'RANSAC', ...
                                                 'DistanceThreshold', obj.maxInlierError);
             
-            estimator = vision.GeometricTransformEstimator;
-            estimator.Transform = 'projective';
-            estimator.AlgebraicDistanceThreshold = obj.maxInlierError;
-            [~, inliersMaskH] = estimator.step(patternPoints, photoPoints);  
+            if exist('estimateGeometricTransform2D')
+                [~,inliersMaskH] = estimateGeometricTransform2D(photoPoints, patternPoints, 'projective', ...
+                    'MaxDistance', obj.maxInlierError);
+            else
+                estimator = vision.GeometricTransformEstimator;
+                estimator.Transform = 'projective';
+                estimator.AlgebraicDistanceThreshold = obj.maxInlierError;
+                [~, inliersMaskH] = estimator.step(patternPoints, photoPoints);  
+            end
             
             if (sum(inliersMaskH) > sum(inliersMaskF) * 0.8)
                 patternPoints = patternPoints(inliersMaskH, :);
@@ -172,11 +177,17 @@ classdef CameraCalibrationBase < handle & matlab.mixin.Heterogeneous
             
             
             % Further homography check
-            estimator = vision.GeometricTransformEstimator;
-            estimator.Transform = 'projective';
-            estimator.AlgebraicDistanceThreshold = obj.maxSmoothError;
-            [~, inliersMask] = estimator.step(patternPoints, photoPoints); 
-            
+            if exist('estimateGeometricTransform2D')
+                [~,inliersMask] = estimateGeometricTransform2D(photoPoints, patternPoints, 'projective', ...
+                    'MaxDistance', obj.maxSmoothError);
+            else
+                estimator = vision.GeometricTransformEstimator;
+                estimator.Transform = 'projective';
+                estimator.AlgebraicDistanceThreshold = obj.maxInlierError;
+                [~, inliersMask] = estimator.step(patternPoints, photoPoints);  
+            end
+
+
             display(['....Matches after smoothness Check: ', num2str(sum(inliersMask))]);
             if (sum(inliersMask) < obj.minMatchedPoints)
                 obj.photosInfo(end).valid = false; 

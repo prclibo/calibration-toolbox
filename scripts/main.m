@@ -2,6 +2,7 @@ display('----------------------------------------------------------------------'
 display('Multiple-Camera Calibration Toolbox'); 
 clear all
 addpath('utils/'); 
+rng(1,"twister");
 
 
 display('----------------------------------------------------------------------'); 
